@@ -2,7 +2,7 @@
 
 # stura_voting.py
 #
-# Copyright (C) 2015 Fabian Wenzelmann <fabianwenzelmann@posteo.de>
+# Copyright (C) 2015 Fabian Wenzelmann <fabianwenzelmann(at)posteo.de>
 #
 # This file is part of stura-voting.
 #
@@ -26,7 +26,7 @@
 """Dieses python-Modul stellt ein Programm für StuRa-Abstimmungen zur
 Verfügung.
 
-:copyright: 2015, Fabian Wenzelmann <fabianwenzelmann@posteo.de>, see
+:copyright: 2015, Fabian Wenzelmann <fabianwenzelmann(at)posteo.de>, see
 AUTHORS for more details
 :license: GPL v 3, see LICENSE for more details.
 """
@@ -136,4 +136,36 @@ class Poll(PollSkel):
 
         Args:
             vote (WeightedVote): Das Vote welches zugefügt werden soll.
+        """
+        self.votes.append(vote)
+
+
+class MedianSkel(PollSkel):
+    """Skelett für eine Median-Abstimmung.
+    Enthält zusätzlich maxValue, den maximal Betrag über den
+    abzustimmen ist.
     """
+    def __init__(self, name, percentRequired, allVotes, maxValue):
+        """
+        Args:
+            maxValue (float): Der abzustimmende Betrag
+        """
+        PollSkel.__init__(name, percentRequired, allVotes)
+        self.maxValue = maxValue
+
+
+class SchulzeSkel(PollSkel):
+    """Skelett für eine Median-Abstimmung.
+    Enthält zusätzlich options, eine Liste aller Abstimmungsgegenstände.
+    """
+    def __init__(self, name, percentRequired, allVotes, options):
+        """
+        Args:
+            options (list<string>): Eine Beschreibung aller
+                zur Abstimmung stehenden Gegenstände
+        """
+        PollSkel.__init__(self, name, percentRequired, allVotes)
+        self.options = options
+
+
+
