@@ -208,7 +208,7 @@ class MedianResult(EvalResult):
 class SchulzeResult(EvalResult):
     """Klasse für ein Schulze Abstimmungsergebnis.
     """
-    def __init__(self, requiredVotes, ranks):
+    def __init__(self, requiredVotes, ranks, d, p):
         """
         Args:
             requiredVotes (int): Anzahl benötigter Stimmen
@@ -218,6 +218,8 @@ class SchulzeResult(EvalResult):
         EvalResult.__init__(self)
         self.requiredVotes = requiredVotes
         self.ranks = ranks
+        self.d = d
+        self.p = p
 
 
 class MedianPoll(Poll):
@@ -297,7 +299,7 @@ class SchulzePoll(Poll):
         d = self.computeD()
         p = self.computeP(d)
         ranks = self.rankP(p)
-        return SchulzeResult(requiredVotes, ranks)
+        return SchulzeResult(requiredVotes, ranks, d, p)
 
     def computeD(self):
         """Berechnet die Matrix d wie sie hier beschrieben ist:
@@ -313,7 +315,7 @@ class SchulzePoll(Poll):
                     if ranking[i] < ranking[j]:
                         d[i][j] += w
                     elif ranking[j] < ranking[i]:
-                        d[j][j] += w
+                        d[j][i] += w
         return d
 
     def computeP(self, d):
