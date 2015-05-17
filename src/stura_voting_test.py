@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# stura_voting.py
+# stura_voting_test.py
 #
 # Copyright (C) 2015 Fabian Wenzelmann <fabianwenzelmann(at)posteo.de>
 #
