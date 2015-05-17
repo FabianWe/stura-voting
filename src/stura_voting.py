@@ -34,6 +34,9 @@ Uses dominate package, licensed under GNU LESSER GENERAL PUBLIC LICENSE
 Version 3.
 """
 
+import math
+from collections import defaultdict
+
 from dominate import document
 from dominate.tags import *
 
@@ -152,6 +155,12 @@ class Poll(PollSkel):
     mittels der Methode addVote neue Abstimmungen zugefügt werden.
     Diese Votes sind Unterklassen der WeightedVoter Klasse
     welche zum aktuellen Abstimmungstyp passen müssen.
+
+    Abstract methods:
+      Die folgende(n) Methoden müssen von den Unterklassen
+      implementiert werden:
+        evaluate(): Werte die Abstimmung aus und gibt ein Objekt
+            von der Klasse EvalResult zurück.
     """
     def __init__(self, skel):
         """
@@ -223,6 +232,38 @@ class MedianPoll(Poll):
         Poll.__init__(self, skel)
         self.maxValue = skel.maxValue
 
+    def evaluate(self):
+        """Wertet das Median-Verfahren aus.
+
+        Nicht abgegebene Votes werden, falls allVotes aktiviert ist,
+        als 0 gezählt. Ist allVotes nicht aktiviert werden diese
+        einfach ignoriert.
+        """
+        actualVotes = []
+        weightSum = 0
+        for vote in self.votes:
+            if vote.value is not None:
+                # einfach zufügen
+                actualVotes.append(vote)
+                weightSum += vote.weight
+            else:
+                # es ist None --> wenn allVotes aktiv mit 0 zufügen
+                # ansonsten ignorieren
+                if self.allVotes:
+                    actualVotes.append(MedianVote(vote.name, vote.weight, 0.0))
+                    weightSum += vote.weight
+        requiredVotes = math.floor(weightSum * self.percentRequired)
+        acceptedValue = None
+        weightSoFar = 0
+        keyFunc = lambda item: item.value
+        actualVotes.sort(key=keyFunc, reverse=True)
+        for vote in actualVotes:
+            weightSoFar += vote.weight
+            if weightSoFar > requiredVotes:
+                acceptedValue = vote.value
+                break
+        return MedianVote(requiredVotes, acceptedValue)
+
 
 class SchulzePoll(Poll):
     """Klasse für eine Schulze-Abstimmung.
@@ -235,3 +276,94 @@ class SchulzePoll(Poll):
         """
         Poll.__init__(self, skel)
         self.options = skel.options
+
+    def evaluate(self):
+        actualVotes = []
+        weightSum = 0
+        for vote in self.votes:
+            if vote.ranking is not None:
+                # einfach zufügen
+                actualVotes.append(vote)
+                weightSum += vote.weight
+            else:
+                # es ist None --> als Nein Stimme zählen
+                # (Annahme: Nein ist letzte Option)
+                if self.allVotes:
+                    r = [1] * (len(self.options) - 1)
+                    r.append(0)
+                    actualVotes.append(SchulzeVote(vote.name, vote.weight, r))
+                    weightSum += vote.weight
+        requiredVotes = math.floor(weightSum * self.percentRequired)
+        d = self.computeD()
+        p = self.computeP(d)
+        ranks = self.rankP(p)
+        return SchulzeResult(requiredVotes, ranks)
+
+    def computeD(self):
+        """Berechnet die Matrix d wie sie hier beschrieben ist:
+        <http://de.wikipedia.org/wiki/Schulze-Methode#Implementierung>
+        """
+        numChoices = len(self.options)
+        d = [[0 for j in range(numChoices)] for i in range(numChoices)]
+        for vote in self.votes:
+            w = vote.weight
+            ranking = vote.ranking
+            for i in range(numChoices):
+                for j in range(i + 1, numChoices):
+                    if ranking[i] < ranking[j]:
+                        d[i][j] += w
+                    elif ranking[j] < ranking[i]:
+                        d[j][j] += w
+        return d
+
+    def computeP(self, d):
+        """Berechnet die Matrix p, Verfahren wie hier
+        <http://de.wikipedia.org/wiki/Schulze-Methode#Implementierung>
+        beschrieben.
+
+        Args:
+            d (Matrix von int): Die Matrix d
+        """
+        numChoices = len(self.options)
+        p = [[0 for j in range(numChoices)] for i in range(numChoices)]
+        for i in range(numChoices):
+            for j in range(numChoices):
+                if i != j:
+                    if d[i][j] > d[j][i]:
+                        p[i][j] = d[i][j]
+                    else:
+                        p[i][j] = 0
+        for i in range(numChoices):
+            for j in range(numChoices):
+                if i != j:
+                    for k in range(numChoices):
+                        if i != k:
+                            if j != k:
+                                p[j][k] = max(p[j][k], min(p[j][i], p[i][k]))
+        return p
+
+    def rankP(self, p):
+        """Sortiert die Matrix p, implementiert wie _rank_p hier
+        <https://github.com/mgp/schulze-method/blob/master/schulze.py>
+
+        Args:
+            p (Matrix von int): Matrix p, berechnet durch computeP
+        """
+        numChoices = len(self.options)
+        result = []
+        candidateWins = defaultdict(list)
+        for i in range(numChoices):
+            numWins = 0
+            for j in range(numChoices):
+                if i != j:
+                    candidateOneScore = p[i][j]
+                    candidateTwoScore = p[j][i]
+                    if candidateOneScore > candidateTwoScore:
+                        numWins += 1
+            lst = candidateWins[numWins]
+            lst.append(i)
+        keys = list(candidateWins.keys())
+        keys.sort(reverse=True)
+        for key in keys:
+            result.append(candidateWins[key])
+        return result
