@@ -29,7 +29,13 @@ Verfügung.
 :copyright: 2015, Fabian Wenzelmann <fabianwenzelmann(at)posteo.de>, see
 AUTHORS for more details
 :license: GPL v 3, see LICENSE for more details.
+
+Uses dominate package, licensed under GNU LESSER GENERAL PUBLIC LICENSE
+Version 3.
 """
+
+from dominate import document
+from dominate.tags import *
 
 
 class WeightedVote(object):
@@ -166,6 +172,43 @@ class Poll(PollSkel):
             vote (WeightedVote): Das Vote welches zugefügt werden soll.
         """
         self.votes.append(vote)
+
+
+class EvalResult(object):
+    """Oberklasse für alle Abstimmungsergebnisse.
+    """
+    def __init__(self):
+        pass
+
+
+class MedianResult(EvalResult):
+    """Klasse für ein Median Abstimmungsergebnis.
+    """
+    def __init__(self, requiredVotes, acceptedValue):
+        """
+        Args:
+            requiredVotes (int): Anzahl benötigter Stimmen
+                für eine Mehrheit
+            acceptedValue (float): Ergebnis (Höhe)
+        """
+        EvalResult.__init__(self)
+        self.requiredVotes = requiredVotes
+        self.acceptedValue = acceptedValue
+
+
+class SchulzeResult(EvalResult):
+    """Klasse für ein Schulze Abstimmungsergebnis.
+    """
+    def __init__(self, requiredVotes, ranks):
+        """
+        Args:
+            requiredVotes (int): Anzahl benötigter Stimmen
+                für eine Mehrheit
+            ranks (?): TODO
+        """
+        EvalResult.__init__(self)
+        self.requiredVotes = requiredVotes
+        self.ranks = ranks
 
 
 class MedianPoll(Poll):
