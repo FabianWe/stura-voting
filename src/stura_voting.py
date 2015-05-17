@@ -100,7 +100,7 @@ class PollSkel(object):
             percentRequired (float): Wie viel Prozent für eine Mehrheit
                 notwendig sind, z.B. 50% für normale Abstimmungen oder
                 75% für 3/4 Mehrheiten. Wert zwischen 0 und 1.
-            allVotes: Gibt an, ob alle Stimmberechtigten gewertet werden
+            allVotes (bool): Gibt an, ob alle Stimmberechtigten gewertet werden
                 sollen oder nur jene die auch eine Stimme abgegeben haben.
                 Das Verhalten hängt von dem später verwendeten Verfahren
                 ab.
@@ -108,6 +108,34 @@ class PollSkel(object):
         self.name = name
         self.percentRequired = percentRequired
         self.allVotes = allVotes
+
+
+class MedianSkel(PollSkel):
+    """Skelett für eine Median-Abstimmung.
+    Enthält zusätzlich maxValue, den maximal Betrag über den
+    abzustimmen ist.
+    """
+    def __init__(self, name, percentRequired, allVotes, maxValue):
+        """
+        Args:
+            maxValue (float): Der abzustimmende Betrag
+        """
+        PollSkel.__init__(name, percentRequired, allVotes)
+        self.maxValue = maxValue
+
+
+class SchulzeSkel(PollSkel):
+    """Skelett für eine Median-Abstimmung.
+    Enthält zusätzlich options, eine Liste aller Abstimmungsgegenstände.
+    """
+    def __init__(self, name, percentRequired, allVotes, options):
+        """
+        Args:
+            options (list<string>): Eine Beschreibung aller
+                zur Abstimmung stehenden Gegenstände
+        """
+        PollSkel.__init__(self, name, percentRequired, allVotes)
+        self.options = options
 
 
 class Poll(PollSkel):
@@ -140,32 +168,27 @@ class Poll(PollSkel):
         self.votes.append(vote)
 
 
-class MedianSkel(PollSkel):
-    """Skelett für eine Median-Abstimmung.
-    Enthält zusätzlich maxValue, den maximal Betrag über den
-    abzustimmen ist.
+class MedianPoll(Poll):
+    """Klasse für eine Median-Abstimmung.
     """
-    def __init__(self, name, percentRequired, allVotes, maxValue):
+    def __init__(self, skel):
         """
         Args:
-            maxValue (float): Der abzustimmende Betrag
+            skel (MedianSkel): Das Skelett aus dem die
+                Abstimmung erzeugt werden soll.
         """
-        PollSkel.__init__(name, percentRequired, allVotes)
-        self.maxValue = maxValue
+        Poll.__init__(self, skel)
+        self.maxValue = skel.maxValue
 
 
-class SchulzeSkel(PollSkel):
-    """Skelett für eine Median-Abstimmung.
-    Enthält zusätzlich options, eine Liste aller Abstimmungsgegenstände.
+class SchulzePoll(Poll):
+    """Klasse für eine Schulze-Abstimmung.
     """
-    def __init__(self, name, percentRequired, allVotes, options):
+    def __init__(self, skel):
         """
         Args:
-            options (list<string>): Eine Beschreibung aller
-                zur Abstimmung stehenden Gegenstände
+            skel (SchulzeSkel): Das Skelett aus dem die
+                Abstimmung erzeugt werden soll.
         """
-        PollSkel.__init__(self, name, percentRequired, allVotes)
-        self.options = options
-
-
-
+        Poll.__init__(self, skel)
+        self.options = skel.options
