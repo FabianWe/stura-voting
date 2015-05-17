@@ -129,7 +129,7 @@ class MedianSkel(PollSkel):
         Args:
             maxValue (float): Der abzustimmende Betrag
         """
-        PollSkel.__init__(name, percentRequired, allVotes)
+        PollSkel.__init__(self, name, percentRequired, allVotes)
         self.maxValue = maxValue
 
 
@@ -168,7 +168,7 @@ class Poll(PollSkel):
             skel (PollSkel): Das Skelett aus welchem der Poll
                                 erzeugt werden soll.
         """
-        PollSkel.__init__(skel.name, skel.percentRequired,
+        PollSkel.__init__(self, skel.name, skel.percentRequired,
                           skel.allVotes)
         self.votes = []
 
@@ -262,7 +262,7 @@ class MedianPoll(Poll):
             if weightSoFar > requiredVotes:
                 acceptedValue = vote.value
                 break
-        return MedianVote(requiredVotes, acceptedValue)
+        return MedianResult(requiredVotes, acceptedValue)
 
 
 class SchulzePoll(Poll):
