@@ -36,6 +36,8 @@ Version 3.
 
 import math
 from collections import defaultdict
+from xml.etree.ElementTree import Element, SubElement
+import xml.dom.minidom as minidom
 
 from dominate import document
 from dominate.tags import *
@@ -51,6 +53,12 @@ class WeightedVote(object):
         """
         self.name = name
         self.weight = weight
+
+    def __str__(self):
+        return 'WeightedVote(name="%s", weight=%d)' % (self.name, self.weight)
+
+    def __repr__(self):
+        return str(self)
 
 
 class MedianVote(WeightedVote):
@@ -118,6 +126,20 @@ class PollSkel(object):
         self.percentRequired = percentRequired
         self.allVotes = allVotes
 
+    def toXMLTree(self, parent):
+        """Fügt die Abstimmung einem XML Baum zu.
+
+           Die Methode gibt den neu erzeugten Knoten zurück.
+           Subklassen können diesen dann weiter bearbeiten.
+        Args:
+            parent (node): Der Elternknoten
+        """
+        node = SubElement(parent, 'poll')
+        node.text = self.name
+        node.set('percent', str(self.percentRequired))
+        node.set('allVotes', str(self.allVotes))
+        return node
+
 
 class MedianSkel(PollSkel):
     """Skelett für eine Median-Abstimmung.
@@ -132,6 +154,12 @@ class MedianSkel(PollSkel):
         PollSkel.__init__(self, name, percentRequired, allVotes)
         self.maxValue = maxValue
 
+    def toXMLTree(self, parent):
+        node = PollSkel.toXMLTree(self, parent)
+        node.set('type', 'median')
+        node.set('maxValue', str(self.maxValue))
+        return node
+
 
 class SchulzeSkel(PollSkel):
     """Skelett für eine Median-Abstimmung.
@@ -145,6 +173,15 @@ class SchulzeSkel(PollSkel):
         """
         PollSkel.__init__(self, name, percentRequired, allVotes)
         self.options = options
+
+    def toXMLTree(self, parent):
+        node = PollSkel.toXMLTree(self, parent)
+        node.set('type', 'schulze')
+        choicesNode = SubElement(node, 'options')
+        for choice in self.options:
+            choiceNode = SubElement(choicesNode, 'option')
+            choiceNode.text = choice
+        return node
 
 
 class Poll(PollSkel):
