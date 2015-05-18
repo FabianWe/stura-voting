@@ -26,6 +26,9 @@ from xml.etree.ElementTree import Element, SubElement
 import xml.dom.minidom as minidom
 import csv
 
+from dominate import document
+from dominate.tags import *
+
 from stura_voting import *
 import xml_functions
 
@@ -150,3 +153,13 @@ def readTable(path, voters, skels):
                 voter = votersMap[vName]
                 p.addVote(p.makeVote(voter, val))
     return polls
+
+
+def pollsToHtml(results):
+    doc = document(title='Auswertung')
+    with doc.head:
+        meta(charset='utf-8')
+    for p, r in results:
+        with doc:
+            r.htmlOutput(doc, p)
+    return doc

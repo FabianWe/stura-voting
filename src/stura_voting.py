@@ -230,42 +230,93 @@ class Poll(PollSkel):
 
 class EvalResult(object):
     """Oberklasse für alle Abstimmungsergebnisse.
+
+    Abstract methods:
+      Die folgende(n) Methoden müssen von den Unterklassen
+      implementiert werden:
+        htmlOutput(doc, poll): Erstellt eine HTML Ausgabe für den
+                         Ausgang der Abstimmung.
     """
-    def __init__(self):
-        pass
+    def __init__(self, actualVotes):
+        self.actualVotes = actualVotes
 
 
 class MedianResult(EvalResult):
     """Klasse für ein Median Abstimmungsergebnis.
     """
-    def __init__(self, requiredVotes, acceptedValue):
+    def __init__(self, actualVotes, requiredVotes, weightSum, acceptedValue):
         """
         Args:
             requiredVotes (int): Anzahl benötigter Stimmen
                 für eine Mehrheit
             acceptedValue (float): Ergebnis (Höhe)
         """
-        EvalResult.__init__(self)
+        EvalResult.__init__(self, actualVotes)
         self.requiredVotes = requiredVotes
+        self.weightSum = weightSum
         self.acceptedValue = acceptedValue
+
+    def htmlOutput(self, doc, poll):
+        with doc:
+            h2('Finanzantrag: "%s"' % poll.name)
+            text = 'Benötigte Stimmen: Mehr als %.2f%% von %d Stimmen, ' + \
+                    'also mehr als %d.'
+            text %= (poll.percentRequired * 100, self.weightSum,
+                     self.requiredVotes)
+            div(text)
+            if poll.allVotes:
+               div('Enthaltungen wurden als Stimme für 0€ gewertet.')
+            with div('Beantragt wurden %.2f€, genehmigt wurden ' % poll.maxValue):
+                b('%.2f€.' % self.acceptedValue)
 
 
 class SchulzeResult(EvalResult):
     """Klasse für ein Schulze Abstimmungsergebnis.
     """
-    def __init__(self, requiredVotes, ranks, d, p):
+    def __init__(self, actualVotes, requiredVotes, weightSum, ranks, d, p):
         """
         Args:
             requiredVotes (int): Anzahl benötigter Stimmen
                 für eine Mehrheit
             ranks (?): TODO
         """
-        EvalResult.__init__(self)
+        EvalResult.__init__(self, actualVotes)
         self.requiredVotes = requiredVotes
+        self.weightSum = weightSum
         self.ranks = ranks
         self.d = d
         self.p = p
 
+    def htmlOutput(self, doc, poll):
+        with doc:
+            h2('Abstimmung: "%s"' % poll.name)
+            text = 'Benötigte Stimmen: Mehr als %.2f%% von %d Stimmen, ' + \
+                    'also mehr als %d.'
+            text %= (poll.percentRequired * 100, self.weightSum,
+                     self.requiredVotes)
+            div(text)
+            if poll.allVotes:
+                div('Enthaltungen wurden als Nein-Stimme gewertet.')
+            div('Das folgende Ranking wurde abgestimmt:')
+            with ol():
+                for group in self.ranks:
+                    li('Gruppe')
+                    with ul():
+                        for elem in group:
+                            li(poll.options[elem])
+            div('Übersicht über die Abstimmungsgegenstände:')
+            br()
+            posNo = len(poll.options) - 1
+            with table(border="1"):
+                with tr():
+                    th('Nr.')
+                    th('Option')
+                    th('% der Stimmen vor Nein')
+                for i, o in enumerate(poll.options):
+                    with tr():
+                        td(str(i + 1))
+                        td(o)
+                        td('%.2f' % ((self.d[i][posNo] / self.weightSum) * 100))
 
 class MedianPoll(Poll):
     """Klasse für eine Median-Abstimmung.
@@ -309,7 +360,7 @@ class MedianPoll(Poll):
             if weightSoFar > requiredVotes:
                 acceptedValue = vote.value
                 break
-        return MedianResult(requiredVotes, acceptedValue)
+        return MedianResult(actualVotes, requiredVotes, weightSum, acceptedValue)
 
     def makeVote(self, voter, _str):
         val = None
@@ -350,7 +401,7 @@ class SchulzePoll(Poll):
         d = self.computeD()
         p = self.computeP(d)
         ranks = self.rankP(p)
-        return SchulzeResult(requiredVotes, ranks, d, p)
+        return SchulzeResult(actualVotes, requiredVotes, weightSum, ranks, d, p)
 
     def computeD(self):
         """Berechnet die Matrix d wie sie hier beschrieben ist:

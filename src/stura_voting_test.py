@@ -155,6 +155,3 @@ def test_schulze_three():
                    [5, 0, 7, 5],
                    [5, 5, 0, 5],
                    [6, 5, 5, 0]]
-    print(r.ranks)
-
-test_schulze_three()
