@@ -24,6 +24,7 @@
 
 from xml.etree.ElementTree import Element, SubElement
 import xml.dom.minidom as minidom
+import csv
 
 from stura_voting import *
 import xml_functions
@@ -91,7 +92,7 @@ def getGeneralInformation(node):
     else:
         allVotes = False
     return name, percent, allVotes
-    
+
 
 def parseMedianSkel(node):
     attributes = node.attributes
@@ -122,3 +123,30 @@ def parsePolls(path):
         else:
             raise PollParseException('Unbekannter Abstimmungstyp "%s"' % _type)
     return result
+
+
+def createInputCSV(path, polls, voters, _del=';'):
+    with open(path, 'w') as csvfile:
+        writer = csv.writer(csvfile, delimiter=_del)
+        firstRow = ['']
+        firstRow.extend(e.name for e in polls)
+        writer.writerow(firstRow)
+        for voter in voters:
+            row = [voter.name]
+            row.extend([''] * len(polls))
+            writer.writerow(row)
+
+
+def readTable(path, voters, skels):
+    votersMap = {v.name: v for v in voters}
+    polls = [s.emptyPoll() for s in skels]
+    with open(path, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        head = next(reader)[1:]
+        allLines = list(reader)
+        for line in allLines:
+            vName = line[0]
+            for p, val in zip(polls, line[1:]):
+                voter = votersMap[vName]
+                p.addVote(p.makeVote(voter, val))
+    return polls

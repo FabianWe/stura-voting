@@ -160,6 +160,9 @@ class MedianSkel(PollSkel):
         node.set('maxValue', str(self.maxValue))
         return node
 
+    def emptyPoll(self):
+        return MedianPoll(self)
+
 
 class SchulzeSkel(PollSkel):
     """Skelett für eine Median-Abstimmung.
@@ -183,6 +186,9 @@ class SchulzeSkel(PollSkel):
             choiceNode.text = choice
         return node
 
+    def emptyPoll(self):
+        return SchulzePoll(self)
+
 
 class Poll(PollSkel):
     """Oberklasse für eine Abstimmung.
@@ -198,6 +204,8 @@ class Poll(PollSkel):
       implementiert werden:
         evaluate(): Werte die Abstimmung aus und gibt ein Objekt
             von der Klasse EvalResult zurück.
+        makeVote(voter, str): Parst aus einem String das die Abstimmung.
+            TODO error handling
     """
     def __init__(self, skel):
         """
@@ -303,6 +311,12 @@ class MedianPoll(Poll):
                 break
         return MedianResult(requiredVotes, acceptedValue)
 
+    def makeVote(self, voter, _str):
+        val = None
+        if _str:
+            val = float(_str)
+        return MedianVote(voter.name, voter.weight, val)
+
 
 class SchulzePoll(Poll):
     """Klasse für eine Schulze-Abstimmung.
@@ -406,3 +420,9 @@ class SchulzePoll(Poll):
         for key in keys:
             result.append(candidateWins[key])
         return result
+
+    def makeVote(self, voter, _str):
+        ranking = None
+        if _str:
+            ranking = [int(val.strip()) for val in _str.split(' ')]
+        return SchulzeVote(voter.name, voter.weight, ranking)
