@@ -27,6 +27,7 @@ import tkinter
 from tkinter import filedialog
 from tkinter import simpledialog
 from tkinter import messagebox
+import tkinter.scrolledtext
 import datetime
 
 from stura_voting_io import *
@@ -69,8 +70,8 @@ class SturaMainFrame(tkinter.Frame):
         numVotersLabel = tkinter.Label(self, textvariable=numVoters)
         votersLabel.grid(row=0, column=0, sticky='W')
         votersButton.grid(row=1, column=0, sticky='WE')
-        votersDisplay.grid(row=2, column=0)
-        numVotersLabel.grid(row=3, column=0, sticky='W')
+        votersDisplay.grid(row=2, column=0, rowspan=4)
+        numVotersLabel.grid(row=6, column=0, sticky='W')
         
         pollsLabel = tkinter.Label(self, text='Abstimmungen')
         pollsOpen = tkinter.Button(self, text='Datei öffnen', command=self.openPolls)
@@ -82,13 +83,21 @@ class SturaMainFrame(tkinter.Frame):
         numPolls = self.numPolls = tkinter.StringVar()
         numPolls.set('ges.: 0')
         numPollsLabel = tkinter.Label(self, textvariable=numPolls)
+        addMedianButton = tkinter.Button(self, text='Median zufügen', command=self.addMedian)
+        addSchulzeButton = tkinter.Button(self, text='Schulze zufügen', command=self.addSchulze)
+        editPollButton = tkinter.Button(self, text='Auswahl bearbeiten', command=self.editPoll)
+        removePollButton = tkinter.Button(self, text='Auswahl entfernen', command=self.removePoll)
         pollsLabel.grid(row=0, column=1, columnspan=4, sticky='W')
         pollsOpen.grid(row=1, column=1)
         pollsSave.grid(row=1, column=2)
         createTableButton.grid(row=1, column=3)
         evaluateButton.grid(row=1, column=4)
-        pollsDisplay.grid(row=2, column=1, columnspan=4, sticky='WE')
-        numPollsLabel.grid(row=3, column=1, sticky='W')
+        pollsDisplay.grid(row=2, column=1, columnspan=4, rowspan=4, sticky='WE')
+        numPollsLabel.grid(row=6, column=1, sticky='W')
+        addMedianButton.grid(row=2, column=5, sticky='NWE')
+        addSchulzeButton.grid(row=3, column=5, sticky='NWE')
+        editPollButton.grid(row=4, column=5, sticky='NWE')
+        removePollButton.grid(row=5, column=5, sticky='NWE')
         
         self.grid()
     
@@ -192,6 +201,206 @@ class SturaMainFrame(tkinter.Frame):
         html = str(pollsToHtml(title, zip(polls, results)))
         with open(name, 'w') as f:
             f.write(html)
+    
+    def editPoll(self):
+        sel = self.pollsDisplay.curselection()
+        if not sel:
+            return
+        assert len(sel) == 1
+        sel = sel[0]
+        p = self.polls[sel]
+        if type(p) == MedianSkel:
+            d = MedianDialog(self, p.name, p.percentRequired, p.maxValue, p.allVotes)
+            if not d.succ:
+                return
+            try:
+                d.checkTypes()
+            except ValueError as e:
+                messagebox.showerror('Eingabefehler', str(e))
+                return
+            p = MedianSkel(d.name, d.req, d.count, d.val)
+            self.polls[sel] = p
+            self.pollsDisplay.delete(sel)
+            self.pollsDisplay.insert(sel, p.name)
+        elif type(p) == SchulzeSkel:
+            d = SchulzeDialog(self, p.name, p.percentRequired, '\n'.join(p.options), p.allVotes)
+            if not d.succ:
+                return
+            try:
+                d.checkTypes()
+            except ValueError as e:
+                messagebox.showerror('Eingabefehler', str(e))
+                return
+            p = SchulzeSkel(d.name, d.req, d.count, d.options)
+            self.polls[sel] = p
+            self.pollsDisplay.delete(sel)
+            self.pollsDisplay.insert(sel, p.name)
+    
+    def removePoll(self):
+        sel = self.pollsDisplay.curselection()
+        if not sel:
+            return
+        assert len(sel) == 1
+        sel = sel[0]
+        self.pollsDisplay.delete(sel)
+        self.polls.pop(sel)
+
+    def addMedian(self):
+        d = MedianDialog(self)
+        if not d.succ:
+            return
+        try:
+            d.checkTypes()
+        except ValueError as e:
+            messagebox.showerror('Eingabefehler', str(e))
+            return
+        p = MedianSkel(d.name, d.req, d.count, d.val)
+        self.polls.append(p)
+        self.pollsDisplay.insert(tkinter.END, p.name)
+        self.updatePollsNum()
+    
+    def addSchulze(self):
+        d = SchulzeDialog(self)
+        if not d.succ:
+            return
+        try:
+            d.checkTypes()
+        except ValueError as e:
+            messagebox.showerror('Eingabefehler', str(e))
+            return
+        p = SchulzeSkel(d.name, d.req, d.count, d.options)
+        self.polls.append(p)
+        self.pollsDisplay.insert(tkinter.END, p.name)
+        self.updatePollsNum()
+
+class MedianDialog(simpledialog.Dialog):
+    def __init__(self, parent, initName='', initReq='0.5', initVal='0', checked=0):
+        self.nameVar = tkinter.StringVar()
+        self.nameVar.set(initName)
+        
+        self.valVar = tkinter.StringVar()
+        self.valVar.set(initVal)
+        
+        self.reqVar = tkinter.StringVar()
+        self.reqVar.set(initReq)
+        
+        self.checked = tkinter.IntVar()
+        self.checked.set(checked)
+        
+        simpledialog.Dialog.__init__(self, parent, 'Median-Abstimmung')
+
+    def checkTypes(self):
+        try:
+            self.val = float(self.val)
+        except ValueError:
+            raise ValueError('%s ist keine Zahl' % self.val)
+        try:
+            self.req = float(self.req)
+        except ValueError:
+            raise ValueError('%s ist keine Zahl' % self.req)
+        if self.req < 0 or self.req > 1:
+            raise ValueError('Prozentzahl muss zwischen 0 und 1 liegen')
+    
+    def body(self, master):
+        tkinter.Label(master, text='Name').grid(row=0, column=0, sticky='W')
+        tkinter.Label(master, text='Wert').grid(row=1, column=0, sticky='W')
+        tkinter.Label(master, text='Benötigte % der Stimmen').grid(row=2, column=0, sticky='W')
+        tkinter.Label(master, text='Enthaltungen mitzählen').grid(row=3, column=0, sticky='W')
+        
+        self.nameEntry = tkinter.Entry(master, textvariable=self.nameVar)
+        self.valEntry = tkinter.Entry(master, textvariable=self.valVar)
+        self.requiredEntry = tkinter.Entry(master, textvariable=self.reqVar)
+        self.countBox = tkinter.Checkbutton(master, variable=self.checked)
+        
+        self.nameEntry.grid(row=0, column=1, sticky='W')
+        self.valEntry.grid(row=1, column=1, sticky='W')
+        self.requiredEntry.grid(row=2, column=1, sticky='W')
+        self.countBox.grid(row=3, column=1, sticky='W')
+        
+        self.succ = False
+    
+    def apply(self):
+        self.succ = True
+        self.name = self.nameVar.get()
+        self.val = self.valVar.get()
+        self.req = self.reqVar.get()
+        self.count = self.checked.get()
+
+class SchulzeDialog(simpledialog.Dialog):
+    def __init__(self, parent, initName='', initReq='0.5', initOptions='\nNein', checked=0):
+        self.nameVar = tkinter.StringVar()
+        self.nameVar.set(initName)
+        
+        self.initOptions = initOptions
+        
+        self.reqVar = tkinter.StringVar()
+        self.reqVar.set(initReq)
+        
+        self.checked = tkinter.IntVar()
+        self.checked.set(checked)
+        
+        simpledialog.Dialog.__init__(self, parent, 'Schulze-Abstimmung')
+
+        
+    def buttonbox(self):
+        '''add standard button box.
+
+        override if you do not want the standard buttons
+        '''
+
+        box = tkinter.Frame(self)
+
+        w = tkinter.Button(box, text="OK", width=10, command=self.ok, default=tkinter.ACTIVE)
+        w.pack(side=tkinter.LEFT, padx=5, pady=5)
+        w = tkinter.Button(box, text="Cancel", width=10, command=self.cancel)
+        w.pack(side=tkinter.LEFT, padx=5, pady=5)
+
+        self.bind("<Escape>", self.cancel)
+
+        box.pack()
+
+
+    def checkTypes(self):
+        try:
+            self.req = float(self.req)
+        except ValueError:
+            raise ValueError('%s ist keine Zahl' % self.req)
+        if self.req < 0 or self.req > 1:
+            raise ValueError('Prozentzahl muss zwischen 0 und 1 liegen')
+        options = []
+        for s in self.options.split('\n'):
+            s = s.strip()
+            if s:
+                options.append(s)
+        self.options = options
+
+    def body(self, master):
+        tkinter.Label(master, text='Name').grid(row=0, column=0, sticky='W')
+        tkinter.Label(master, text='Optionen').grid(row=1, column=0, sticky='W')
+        tkinter.Label(master, text='Benötigte % der Stimmen').grid(row=2, column=0, sticky='W')
+        tkinter.Label(master, text='Enthaltungen mitzählen').grid(row=3, column=0, sticky='W')
+        
+        self.nameEntry = tkinter.Entry(master, textvariable=self.nameVar)
+        self.optionsText = tkinter.scrolledtext.ScrolledText(master)
+        self.optionsText.insert(tkinter.END, self.initOptions)
+        self.requiredEntry = tkinter.Entry(master, textvariable=self.reqVar)
+        self.countBox = tkinter.Checkbutton(master, variable=self.checked)
+        
+        self.nameEntry.grid(row=0, column=1, sticky='W')
+        self.optionsText.grid(row=1, column=1, sticky='W')
+        self.requiredEntry.grid(row=2, column=1, sticky='W')
+        self.countBox.grid(row=3, column=1, sticky='W')
+        self.optionsText.focus_set()
+        
+        self.succ = False
+
+
+    def apply(self):
+        self.succ = True
+        self.name = self.nameVar.get()
+        self.options = self.optionsText.get('1.0', tkinter.END + '-1c')
+        self.req = self.reqVar.get()
+        self.count = self.checked.get()
 
 if __name__ == '__main__':
     root = tkinter.Tk()
