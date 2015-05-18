@@ -399,18 +399,18 @@ class SchulzePoll(Poll):
                     actualVotes.append(SchulzeVote(vote.name, vote.weight, r))
                     weightSum += vote.weight
         requiredVotes = math.floor(weightSum * self.percentRequired)
-        d = self.computeD()
+        d = self.computeD(actualVotes)
         p = self.computeP(d)
         ranks = self.rankP(p)
         return SchulzeResult(actualVotes, requiredVotes, weightSum, ranks, d, p)
 
-    def computeD(self):
+    def computeD(self, votes):
         """Berechnet die Matrix d wie sie hier beschrieben ist:
         <http://de.wikipedia.org/wiki/Schulze-Methode#Implementierung>
         """
         numChoices = len(self.options)
         d = [[0 for j in range(numChoices)] for i in range(numChoices)]
-        for vote in self.votes:
+        for vote in votes:
             w = vote.weight
             ranking = vote.ranking
             for i in range(numChoices):

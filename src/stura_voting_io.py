@@ -155,8 +155,10 @@ def readTable(path, voters, skels):
     return polls
 
 
-def pollsToHtml(results):
-    doc = document(title='Auswertung')
+def pollsToHtml(title, results):
+    doc = document(title=title)
+    with doc:
+        h1(title)
     with doc.head:
         meta(charset='utf-8')
     for p, r in results:
