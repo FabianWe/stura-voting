@@ -58,6 +58,7 @@ class SturaMainFrame(tkinter.Frame):
         self.voters = []
         
         tkinter.Frame.__init__(self, master)
+        self.grid(row=0, column=0, sticky='NSEW')
         master.title('StuRa Abstimmungen')
         votersLabel = tkinter.Label(self, text='Abstimmende')
         votersButton = tkinter.Button(self, text='Datei öffnen', command=self.openVoters)
@@ -99,7 +100,13 @@ class SturaMainFrame(tkinter.Frame):
         editPollButton.grid(row=4, column=5, sticky='NWE')
         removePollButton.grid(row=5, column=5, sticky='NWE')
         
-        self.grid()
+        menubar = tkinter.Menu(self)
+        menubar.add_command(label='Über', command=self.showLicense)
+        master.config(menu=menubar)
+    
+    def showLicense(self):
+        messagebox.showinfo('StuRa Abstimmungstool (stura-voting)', 
+            stura_voting_copyright)
     
     def openVoters(self):
         file_opt = {}
