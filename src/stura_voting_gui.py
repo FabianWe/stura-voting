@@ -251,6 +251,7 @@ class SturaMainFrame(tkinter.Frame):
         sel = sel[0]
         self.pollsDisplay.delete(sel)
         self.polls.pop(sel)
+        self.updatePollsNum()
 
     def addMedian(self):
         d = MedianDialog(self)
