@@ -476,5 +476,9 @@ class SchulzePoll(Poll):
     def makeVote(self, voter, _str):
         ranking = None
         if _str:
-            ranking = [int(val.strip()) for val in _str.split(' ')]
+            ranking = []
+            for val in _str.split(' '):
+                val = val.strip()
+                if val:
+                    ranking.append(int(val))
         return SchulzeVote(voter.name, voter.weight, ranking)
