@@ -271,8 +271,11 @@ class MedianResult(EvalResult):
             div(text)
             if poll.allVotes:
                div('Enthaltungen wurden als Stimme für 0€ gewertet.')
-            with div('Beantragt wurden %.2f€, genehmigt wurden ' % poll.maxValue):
-                b('%.2f€.' % self.acceptedValue)
+            if self.acceptedValue is None:
+                div('Es gab keine Stimmen.')
+            else:
+                with div('Beantragt wurden %.2f€, genehmigt wurden ' % poll.maxValue):
+                    b('%.2f€.' % self.acceptedValue)
 
 
 class SchulzeResult(EvalResult):
