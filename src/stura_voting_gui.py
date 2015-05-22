@@ -53,6 +53,8 @@ If not, see <http://www.gnu.org/licenses/>.
 
 class SturaMainFrame(tkinter.Frame):
     def __init__(self, master=None):
+        """Initalisiert das tkinter frame
+        """
         # none gui variables
         self.polls = []
         self.voters = []
@@ -105,10 +107,17 @@ class SturaMainFrame(tkinter.Frame):
         master.config(menu=menubar)
     
     def showLicense(self):
+        """Zeigt Copyright Hinweise und einen kurzen Text
+        zur GPL in einem Fenster an.
+        """
         messagebox.showinfo('StuRa Abstimmungstool (stura-voting)', 
             stura_voting_copyright)
     
     def openVoters(self):
+        """Öffnet einen Dialog zum Öffnen der Voters Datei.
+        
+        Fügt die Voters den entsprechenden Listen hinzu.
+        """
         file_opt = {}
         file_opt['defaultextension'] = '.csv'
         file_opt['filetypes'] = [('csv files', '.csv'), ('all files', '.*')]
@@ -129,6 +138,10 @@ class SturaMainFrame(tkinter.Frame):
         self.voters = voters
 
     def openPolls(self):
+        """Öffnet einen Dialog zum Öffnen der Abstimmungsdatei Datei (xml).
+
+        Fügt die Abstimmungen den entsprechenden Listen hinzu.
+        """
         file_opt = {}
         file_opt['defaultextension'] = '.xml'
         file_opt['filetypes'] = [('xml files', '.xml'), ('all files', '.*')]
@@ -150,6 +163,8 @@ class SturaMainFrame(tkinter.Frame):
 
 
     def savePolls(self):
+        """Öffnet einen Dialog zum Speichern der Abstimmungsdatei Datei (xml).
+        """
         file_opt = {}
         file_opt['defaultextension'] = '.xml'
         file_opt['filetypes'] = [('xml files', '.xml'), ('all files', '.*')]
@@ -161,9 +176,14 @@ class SturaMainFrame(tkinter.Frame):
         writePollsToXML(name, self.polls)
 
     def updatePollsNum(self):
+        """Aktualisiert die Anzeige der Anzahl der Abstimmungen.
+        """
         self.numPolls.set('ges.: %d' % len(self.polls))
     
     def createTable(self):
+        """Generiert aus den aktuellen Daten die Auswertungstabelle
+        und speichert diese über einen Dialog ab.
+        """
         file_opt = {}
         file_opt['defaultextension'] = '.csv'
         file_opt['filetypes'] = [('csv files', '.csv'), ('all files', '.*')]
@@ -175,6 +195,11 @@ class SturaMainFrame(tkinter.Frame):
         createInputCSV(name, self.polls, self.voters)
 
     def evaluate(self):
+        """Führt mit den aktuellen Daten die Abstimmungen durch.
+
+        Die csv Datei wird über einen Dialog geöffnet und das Ergebnis
+        in eine html Datei gespeichert.
+        """
         ask = messagebox.askyesno('Fortfahren?', 'Sind alle aktuellen Dateien geöffnet?')
         if not ask:
             return
@@ -210,6 +235,8 @@ class SturaMainFrame(tkinter.Frame):
             f.write(html)
     
     def editPoll(self):
+        """Öffnet ein Fenster um eine Abstimmung zu überarbeiten.
+        """
         sel = self.pollsDisplay.curselection()
         if not sel:
             return
@@ -244,6 +271,8 @@ class SturaMainFrame(tkinter.Frame):
             self.pollsDisplay.insert(sel, p.name)
     
     def removePoll(self):
+        """Entfernt die markierte Abstimmung.
+        """
         sel = self.pollsDisplay.curselection()
         if not sel:
             return
@@ -254,6 +283,8 @@ class SturaMainFrame(tkinter.Frame):
         self.updatePollsNum()
 
     def addMedian(self):
+        """Fügt über einen Dialog eine neue Median-Abstimmung hinzu.
+        """
         d = MedianDialog(self)
         if not d.succ:
             return
@@ -268,6 +299,8 @@ class SturaMainFrame(tkinter.Frame):
         self.updatePollsNum()
     
     def addSchulze(self):
+        """Fügt über einen Dialog eine neue Schulze-Abstimmung hinzu.
+        """
         d = SchulzeDialog(self)
         if not d.succ:
             return
@@ -282,6 +315,8 @@ class SturaMainFrame(tkinter.Frame):
         self.updatePollsNum()
 
 class MedianDialog(simpledialog.Dialog):
+    """Dialog um Median-Abstimmungen zu überarbeiten.
+    """
     def __init__(self, parent, initName='', initReq='0.5', initVal='0', checked=0):
         self.nameVar = tkinter.StringVar()
         self.nameVar.set(initName)
@@ -298,6 +333,10 @@ class MedianDialog(simpledialog.Dialog):
         simpledialog.Dialog.__init__(self, parent, 'Median-Abstimmung')
 
     def checkTypes(self):
+        """Testet, ob die eingetragenen Werte korrekt sind.
+
+        Wirft einen ValueError wenn nicht.
+        """
         try:
             self.val = float(self.val)
         except ValueError:
@@ -310,6 +349,8 @@ class MedianDialog(simpledialog.Dialog):
             raise ValueError('Prozentzahl muss zwischen 0 und 1 liegen')
     
     def body(self, master):
+        """Anordnung des Dialogs.
+        """
         tkinter.Label(master, text='Name').grid(row=0, column=0, sticky='W')
         tkinter.Label(master, text='Wert').grid(row=1, column=0, sticky='W')
         tkinter.Label(master, text='Benötigte % der Stimmen').grid(row=2, column=0, sticky='W')
@@ -328,6 +369,10 @@ class MedianDialog(simpledialog.Dialog):
         self.succ = False
     
     def apply(self):
+        """Wird nach betätigen des OKAY Knopfes durchgeführt,
+        setzt die Werte aus den Feldern in die entsprechenden
+        Variablen.
+        """
         self.succ = True
         self.name = self.nameVar.get()
         self.val = self.valVar.get()
@@ -335,6 +380,8 @@ class MedianDialog(simpledialog.Dialog):
         self.count = self.checked.get()
 
 class SchulzeDialog(simpledialog.Dialog):
+    """Dialog um Schulze-Abstimmungen zu überarbeiten.
+    """
     def __init__(self, parent, initName='', initReq='0.5', initOptions='\nNein', checked=0):
         self.nameVar = tkinter.StringVar()
         self.nameVar.set(initName)
@@ -351,11 +398,8 @@ class SchulzeDialog(simpledialog.Dialog):
 
         
     def buttonbox(self):
-        '''add standard button box.
-
-        override if you do not want the standard buttons
-        '''
-
+        """Ändert die das Verhalten der Buttons.
+        """
         box = tkinter.Frame(self)
 
         w = tkinter.Button(box, text="OK", width=10, command=self.ok, default=tkinter.ACTIVE)
@@ -369,6 +413,10 @@ class SchulzeDialog(simpledialog.Dialog):
 
 
     def checkTypes(self):
+        """Testet, ob die eingetragenen Werte korrekt sind.
+
+        Wirft einen ValueError wenn nicht.
+        """
         try:
             self.req = float(self.req)
         except ValueError:
@@ -383,6 +431,8 @@ class SchulzeDialog(simpledialog.Dialog):
         self.options = options
 
     def body(self, master):
+        """Anordnung des Dialogs.
+        """
         tkinter.Label(master, text='Name').grid(row=0, column=0, sticky='W')
         tkinter.Label(master, text='Optionen').grid(row=1, column=0, sticky='W')
         tkinter.Label(master, text='Benötigte % der Stimmen').grid(row=2, column=0, sticky='W')
@@ -404,6 +454,10 @@ class SchulzeDialog(simpledialog.Dialog):
 
 
     def apply(self):
+        """Wird nach betätigen des OKAY Knopfes durchgeführt,
+        setzt die Werte aus den Feldern in die entsprechenden
+        Variablen.
+        """
         self.succ = True
         self.name = self.nameVar.get()
         self.options = self.optionsText.get('1.0', tkinter.END + '-1c')
