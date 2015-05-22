@@ -233,7 +233,7 @@ class EvalResult(object):
     """Oberklasse für alle Abstimmungsergebnisse.
 
     Abstract methods:
-      Die folgende(n) Methoden müssen von den Unterklassen
+      Die folgende(n) Methode(n) müssen von den Unterklassen
       implementiert werden:
         htmlOutput(doc, poll): Erstellt eine HTML Ausgabe für den
                          Ausgang der Abstimmung.
@@ -248,8 +248,12 @@ class MedianResult(EvalResult):
     def __init__(self, actualVotes, requiredVotes, weightSum, acceptedValue):
         """
         Args:
+            actualVotes (list): Liste aller tatsächlich bei der
+                Auszählung beachteten Stimmen
             requiredVotes (int): Anzahl benötigter Stimmen
                 für eine Mehrheit
+            weightSum (int): Summe aller Stimmgewichte wie sie für
+                Auszählung beachtet wurde
             acceptedValue (float): Ergebnis (Höhe)
         """
         EvalResult.__init__(self, actualVotes)
@@ -277,9 +281,17 @@ class SchulzeResult(EvalResult):
     def __init__(self, actualVotes, requiredVotes, weightSum, ranks, d, p):
         """
         Args:
+            actualVotes (list): Liste aller tatsächlich bei der
+                Auszählung beachteten Stimmen
             requiredVotes (int): Anzahl benötigter Stimmen
                 für eine Mehrheit
-            ranks (?): TODO
+            weightSum (int): Summe aller Stimmgewichte wie sie für
+                Auszählung beachtet wurde
+            ranks (list<list>): Liste aller Gruppen (sortiert nach
+                Bestes, 2. Bestes usw.). Jedes Element ist eine Liste
+                mit den Index-Werten der Abstimmungen.
+            d (list<list>): Matrix d aus dem Schulze-Algorithmus
+            p (list<list>): Matrix p aus dem Schulze-Algorithmus
         """
         EvalResult.__init__(self, actualVotes)
         self.requiredVotes = requiredVotes
@@ -308,16 +320,35 @@ class SchulzeResult(EvalResult):
             div('Übersicht über die Abstimmungsgegenstände:')
             br()
             posNo = len(poll.options) - 1
-            with table(border="1"):
-                with tr():
-                    th('Nr.')
-                    th('Option')
-                    th('% der Stimmen vor Nein')
-                for i, o in enumerate(poll.options):
+            if self.weightSum == 0:
+                div('Es gab keine Stimmen.')
+            else:
+                with table(border="1"):
                     with tr():
-                        td(str(i + 1))
-                        td(o)
-                        td('%.2f' % ((self.d[i][posNo] / self.weightSum) * 100))
+                        th('Nr.')
+                        th('Option')
+                        th('% der Stimmen vor Nein')
+                    for i, o in enumerate(poll.options):
+                        with tr():
+                            td(str(i + 1))
+                            td(o)
+                            td('%.2f' % ((self.d[i][posNo] / self.weightSum) * 100))
+
+
+class MakeVoteException(Exception):
+    """Wird geworfen, wenn ein Vote nicht geparsed werden kann.
+       
+       Diese Exception tritt auf, wenn eine Stimme aus deinem
+       String erstellt werden soll aber dieser keine korrekte
+       Syntax aufweist.
+    """
+    def __init__(self, msg):
+        """
+        Args:
+            msg (string): Beschreibt den Fehler.
+        """
+        Exception.__init__(self, msg)
+
 
 class MedianPoll(Poll):
     """Klasse für eine Median-Abstimmung.
@@ -364,9 +395,18 @@ class MedianPoll(Poll):
         return MedianResult(actualVotes, requiredVotes, weightSum, acceptedValue)
 
     def makeVote(self, voter, _str):
+        """Erstellt ein MedianVote und parsed diesen aus dem String.
+        
+        Die Eingabe muss als float gelesen werden können, ansonsten
+        wird eine
+        """
         val = None
+        _str = _str.strip()
         if _str:
-            val = float(_str)
+            try:
+                val = float(_str)
+            except ValueError as e:
+                raise MakeVoteException('Eingabe ist keine gültige Zahl: %s' % _str)
         return MedianVote(voter.name, voter.weight, val)
 
 
@@ -480,5 +520,10 @@ class SchulzePoll(Poll):
             for val in _str.split(' '):
                 val = val.strip()
                 if val:
-                    ranking.append(int(val))
+                    try:
+                        ranking.append(int(val))
+                    except ValueError as e:
+                        raise MakeVoteException('Ranking ist keine gültige Zahl: %s' % val)
+            if len(ranking) != len(self.options):
+                raise MakeVoteException('Falsche Anzahl von Gegenständen in der Stimme %s' % _str)
         return SchulzeVote(voter.name, voter.weight, ranking)
