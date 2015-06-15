@@ -44,10 +44,12 @@ To create a aggregation table, press "Tabelle erstellen".
 Lastly, you enter the votes into the table and the programms can 
 then calculate results, which are saved in a .html file in an 
 easy readable format.
+
 Open the aggregation table (e.g. with libreoffice calc) and add 
 the votes into the relevant field. Preferences are added with a 
 space seperating the numbers (e.g. "1 3 2 4"). Save the file (ass 
 .csv!).
+
 Lastly, press "Auswerten". Now, you can enter a titel for the 
 vote and then provide the filepath to the aggregation 
 table. Save the result. To view the results, open the result file 
