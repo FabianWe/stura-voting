@@ -366,9 +366,20 @@ class MedianPoll(Poll):
     def makeVote(self, voter, _str):
         val = None
         if _str:
-            val = float(_str)
+            val = self.parseFloat(_str)
         return MedianVote(voter.name, voter.weight, val)
 
+
+    def parseFloat(self, _str):
+        result = ''
+        for c in _str:
+            if c == ',':
+                result += '.'
+            elif c == '.':
+                result += ','
+            else:
+                result += c
+        return float(result)
 
 class SchulzePoll(Poll):
     """Klasse für eine Schulze-Abstimmung.
