@@ -44,6 +44,15 @@ from dominate import document
 from dominate.tags import *
 
 
+class MakeVoteException(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str(self):
+        return self.msg
+
+
 class WeightedVote(object):
 
     """Klasse für einen abstimmende Initiative / Fachbereich."""
@@ -218,7 +227,7 @@ class Poll(PollSkel):
       implementiert werden:
         evaluate(): Werte die Abstimmung aus und gibt ein Objekt
             von der Klasse EvalResult zurück.
-        makeVote(voter, str): Parst aus einem String das die Abstimmung.
+        makeVote(voter, str): Parst aus einem String das Abstimmungsergebnis.
             TODO error handling
     """
 
@@ -390,7 +399,12 @@ class MedianPoll(Poll):
     def makeVote(self, voter, _str):
         val = None
         if _str:
-            val = self.parseFloat(_str)
+            try:
+                val = self.parseFloat(_str)
+            except ValueError as e:
+                raise MakeVoteException(
+                    ('Eingegebener Wert von %s ist kein gültiger Zahlenwert: ' %
+                     voter.name) + str(e))
         return MedianVote(voter.name, voter.weight, val)
 
     def parseFloat(self, _str):
@@ -518,4 +532,8 @@ class SchulzePoll(Poll):
                 val = val.strip()
                 if val:
                     ranking.append(int(val))
+            if len(ranking) != len(self.options):
+                raise MakeVoteException(
+                    'Falsche Anzahl an Abstimmungsgegenständen bei %s: Erwarte %d und habe %d erhalten.' %
+                    (voter.name, len(self.options), len(ranking)))
         return SchulzeVote(voter.name, voter.weight, ranking)

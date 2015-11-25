@@ -233,7 +233,11 @@ class SturaMainFrame(tkinter.Frame):
         name = filedialog.askopenfilename(**file_opt)
         if not name:
             return
-        polls = readTable(name, self.voters, self.polls)
+        try:
+            polls = readTable(name, self.voters, self.polls)
+        except MakeVoteException as e:
+            messagebox.showerror('Fehler', 'Fehler in Eingabe:\n\n' + str(e))
+            return
         results = []
         for poll in polls:
             results.append(poll.evaluate())
