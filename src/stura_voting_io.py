@@ -34,6 +34,7 @@ import xml_functions
 
 
 class VoterParseException(Exception):
+
     def __init__(self, msg):
         self.msg = msg
 
@@ -42,6 +43,7 @@ class VoterParseException(Exception):
 
 
 class PollParseException(Exception):
+
     def __init__(self, msg):
         self.msg = msg
 

@@ -45,7 +45,9 @@ from dominate.tags import *
 
 
 class WeightedVote(object):
+
     """Klasse für einen abstimmende Initiative / Fachbereich."""
+
     def __init__(self, name, weight):
         """
         Args:
@@ -63,7 +65,9 @@ class WeightedVote(object):
 
 
 class MedianVote(WeightedVote):
+
     """Klasse für eine Stimme bei einer Median-Abstimmung."""
+
     def __init__(self, name, weight, value):
         """
         Args:
@@ -77,7 +81,9 @@ class MedianVote(WeightedVote):
 
 
 class SchulzeVote(WeightedVote):
+
     """Klasse für eine Stimme bei einer Schulze-Abstimmung."""
+
     def __init__(self, name, weight, ranking):
         """
         Args:
@@ -95,6 +101,7 @@ class SchulzeVote(WeightedVote):
 
 
 class PollSkel(object):
+
     """Oberklasse für ein Abstimmungsskellet. Dieses beschreibt
      eine Abstimmung ohne die Stimmen die abgegeben wurden,
      schreibt also beispielsweise nur vor, welche Gegenstände
@@ -111,6 +118,7 @@ class PollSkel(object):
         emptyPoll(): Erstellt eine leere Abstimmung in der
           Abstimmungen zugefügt werden können.
     """
+
     def __init__(self, name, percentRequired, allVotes):
         """
         Args:
@@ -143,10 +151,12 @@ class PollSkel(object):
 
 
 class MedianSkel(PollSkel):
+
     """Skelett für eine Median-Abstimmung.
     Enthält zusätzlich maxValue, den maximal Betrag über den
     abzustimmen ist.
     """
+
     def __init__(self, name, percentRequired, allVotes, maxValue):
         """
         Args:
@@ -166,9 +176,11 @@ class MedianSkel(PollSkel):
 
 
 class SchulzeSkel(PollSkel):
+
     """Skelett für eine Median-Abstimmung.
     Enthält zusätzlich options, eine Liste aller Abstimmungsgegenstände.
     """
+
     def __init__(self, name, percentRequired, allVotes, options):
         """
         Args:
@@ -192,6 +204,7 @@ class SchulzeSkel(PollSkel):
 
 
 class Poll(PollSkel):
+
     """Oberklasse für eine Abstimmung.
     Im Gegensatz zu einem PollSkel gibt es zusätzlich
     die einzelnen Abstimmungen der Initiativen / Fachbereiche.
@@ -208,6 +221,7 @@ class Poll(PollSkel):
         makeVote(voter, str): Parst aus einem String das die Abstimmung.
             TODO error handling
     """
+
     def __init__(self, skel):
         """
         Args:
@@ -230,6 +244,7 @@ class Poll(PollSkel):
 
 
 class EvalResult(object):
+
     """Oberklasse für alle Abstimmungsergebnisse.
 
     Abstract methods:
@@ -238,13 +253,16 @@ class EvalResult(object):
         htmlOutput(doc, poll): Erstellt eine HTML Ausgabe für den
                          Ausgang der Abstimmung.
     """
+
     def __init__(self, actualVotes):
         self.actualVotes = actualVotes
 
 
 class MedianResult(EvalResult):
+
     """Klasse für ein Median Abstimmungsergebnis.
     """
+
     def __init__(self, actualVotes, requiredVotes, weightSum, acceptedValue):
         """
         Args:
@@ -261,19 +279,21 @@ class MedianResult(EvalResult):
         with doc:
             h2('Finanzantrag: "%s"' % poll.name)
             text = 'Benötigte Stimmen: Mehr als %.2f%% von %d Stimmen, ' + \
-                    'also mehr als %d.'
+                'also mehr als %d.'
             text %= (poll.percentRequired * 100, self.weightSum,
                      self.requiredVotes)
             div(text)
             if poll.allVotes:
-               div('Enthaltungen wurden als Stimme für 0€ gewertet.')
+                div('Enthaltungen wurden als Stimme für 0€ gewertet.')
             with div('Beantragt wurden %.2f€, genehmigt wurden ' % poll.maxValue):
                 b('%.2f€.' % self.acceptedValue)
 
 
 class SchulzeResult(EvalResult):
+
     """Klasse für ein Schulze Abstimmungsergebnis.
     """
+
     def __init__(self, actualVotes, requiredVotes, weightSum, ranks, d, p):
         """
         Args:
@@ -292,7 +312,7 @@ class SchulzeResult(EvalResult):
         with doc:
             h2('Abstimmung: "%s"' % poll.name)
             text = 'Benötigte Stimmen: Mehr als %.2f%% von %d Stimmen, ' + \
-                    'also mehr als %d.'
+                'also mehr als %d.'
             text %= (poll.percentRequired * 100, self.weightSum,
                      self.requiredVotes)
             div(text)
@@ -317,11 +337,15 @@ class SchulzeResult(EvalResult):
                     with tr():
                         td(str(i + 1))
                         td(o)
-                        td('%.2f' % ((self.d[i][posNo] / self.weightSum) * 100))
+                        td('%.2f' %
+                           ((self.d[i][posNo] / self.weightSum) * 100))
+
 
 class MedianPoll(Poll):
+
     """Klasse für eine Median-Abstimmung.
     """
+
     def __init__(self, skel):
         """
         Args:
@@ -369,7 +393,6 @@ class MedianPoll(Poll):
             val = self.parseFloat(_str)
         return MedianVote(voter.name, voter.weight, val)
 
-
     def parseFloat(self, _str):
         result = ''
         for c in _str:
@@ -381,9 +404,12 @@ class MedianPoll(Poll):
                 result += c
         return float(result)
 
+
 class SchulzePoll(Poll):
+
     """Klasse für eine Schulze-Abstimmung.
     """
+
     def __init__(self, skel):
         """
         Args:
